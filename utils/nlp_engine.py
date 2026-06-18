@@ -13,7 +13,11 @@ import streamlit as st
 try:
     nlp = spacy.load('en_core_web_sm')
 except Exception:
-    nlp = None  
+    try:
+        spacy.cli.download('en_core_web_sm')
+        nlp = spacy.load('en_core_web_sm')
+    except Exception:
+        nlp = None
 
 COMMON_SKILLS = [
     'python', 'java', 'c++', 'javascript', 'react', 'node.js', 'angular', 'vue',
