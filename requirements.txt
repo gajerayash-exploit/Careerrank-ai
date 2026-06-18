@@ -1,0 +1,11 @@
+streamlit==1.32.0
+spacy==3.7.4
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
+nltk==3.8.1
+scikit-learn==1.4.1.post1
+pdfplumber==0.11.0
+plotly==5.20.0
+pandas==2.2.1
+fpdf2==2.7.8
+wordcloud==1.9.3
+matplotlib==3.8.3
