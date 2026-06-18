@@ -304,6 +304,7 @@ def _draw_candidate_card(pdf, row, rank):
     ai_sum      = _safe(row.get("AI Summary", ""))
     matched     = _join_list(row.get("Matched Skills", []))
     missing     = _join_list(row.get("Missing Skills", []), 6)
+    questions   = _safe(row.get("Interview Questions", ""))
 
     cw = 190
     text_w = cw - 42
@@ -313,8 +314,10 @@ def _draw_candidate_card(pdf, row, rank):
     missing_lines = _text_lines(pdf, text_w, missing)
     pdf.set_font("helvetica", "I", 8.5)
     ai_lines      = _text_lines(pdf, text_w, ai_sum)
+    pdf.set_font("helvetica", "", 8.5)
+    q_lines       = _text_lines(pdf, text_w, questions)
     
-    card_h = 32 + (matched_lines * 5) + (missing_lines * 5) + (ai_lines * 5) + 12
+    card_h = 32 + (matched_lines * 5) + (missing_lines * 5) + (ai_lines * 5) + (q_lines * 5) + 16
 
     if pdf.get_y() + card_h > 275:
         pdf.add_page()
@@ -390,6 +393,18 @@ def _draw_candidate_card(pdf, row, rank):
     pdf.set_text_color(*DARK)
     pdf.set_x(cx + 36)
     pdf.multi_cell(text_w, 5, ai_sum, new_x="LMARGIN", new_y="NEXT")
+    
+    pdf.ln(2)
+    
+    pdf.set_font("helvetica", "B", 8.5)
+    pdf.set_text_color(*AMBER)
+    pdf.set_xy(cx + 6, pdf.get_y())
+    pdf.cell(30, 5, "Interview Qs:", new_x="RIGHT", new_y="LAST")
+    
+    pdf.set_font("helvetica", "", 8.5)
+    pdf.set_text_color(*DARK)
+    pdf.set_x(cx + 36)
+    pdf.multi_cell(text_w, 5, questions, new_x="LMARGIN", new_y="NEXT")
 
     pdf.set_y(cy + card_h + 6)
     pdf.set_text_color(0, 0, 0)

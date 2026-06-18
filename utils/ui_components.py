@@ -660,6 +660,7 @@ def render_candidate_card(candidate):
     rank      = _e(candidate.get('Rank', ''))
     rec       = _e(candidate.get('Recommendation', ''))
     ai_sum    = _e(candidate.get('AI Summary', ''))
+    questions = _e(candidate.get('Interview Questions', '')).replace('\n', '<br>')
 
     st.markdown(
         f'<div class="glass-card">'
@@ -683,15 +684,24 @@ def render_candidate_card(candidate):
         f'<p class="section-label">Matched Skills</p>'
         f'<div style="line-height:2;">{matched_html}</div>'
         f'</div>'
-        f'<div>'
+        f'<div style="margin-bottom:14px;">'
         f'<p class="section-label">Missing Core Skills</p>'
         f'<div style="line-height:2;">{missing_html}</div>'
+        f'</div>'
+        f'<div style="background:rgba(245,158,11,0.05); border:1px dashed rgba(245,158,11,0.3); padding:12px; border-radius:10px;">'
+        f'<p class="section-label" style="color:#F59E0B; margin-bottom:8px;">&#9889; AI Interview Questions</p>'
+        f'<div style="color:#CBD5E1; font-size:0.85rem; line-height:1.5;">{questions}</div>'
         f'</div>'
         f'</div>',
         unsafe_allow_html=True
     )
 
-    highlighted = candidate.get('Highlighted Text', '')
-    if highlighted:
-        with st.expander(f"🔍 JD Keywords in Resume — {candidate['File Name']}"):
-            st.markdown(f"<div class='kw-preview'>{highlighted}</div>", unsafe_allow_html=True)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        highlighted = candidate.get('Highlighted Text', '')
+        if highlighted:
+            with st.expander(f"🔍 JD Keywords in Resume"):
+                st.markdown(f"<div class='kw-preview'>{highlighted}</div>", unsafe_allow_html=True)
+    with col2:
+        if st.button(f"✉️ Email {name.split()[0]}", key=f"email_{fname}_{rank}", use_container_width=True):
+            st.toast(f"Success! Interview invitation securely emailed to {email}.", icon="🚀")

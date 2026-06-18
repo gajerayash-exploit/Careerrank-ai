@@ -12,6 +12,8 @@ from utils.ui_components import (
     render_section_header, render_divider
 )
 from utils.pdf_generator import generate_pdf_report
+from utils.db_engine import save_analysis_to_db, get_analysis_history
+import json
 
 st.set_page_config(
     page_title="CareerRank AI | Smart Candidate Screening",
@@ -21,6 +23,33 @@ st.set_page_config(
 )
 
 apply_custom_css()
+
+with st.sidebar:
+    st.markdown("### ⚙️ Settings")
+    gemini_key = st.text_input("Gemini API Key", type="password", placeholder="AI Interview Questions", help="Get a free key from Google AI Studio to unlock generative interview questions.")
+    if gemini_key:
+        st.session_state.gemini_api_key = gemini_key
+
+    st.markdown("### 🗄️ Database (Supabase)")
+    sb_url = st.text_input("Supabase Project URL", placeholder="https://xyz.supabase.co")
+    sb_key = st.text_input("Supabase API Key", type="password")
+    if sb_url and sb_key:
+        st.session_state.supabase_url = sb_url
+        st.session_state.supabase_key = sb_key
+        
+        st.markdown("#### 📜 History")
+        history = get_analysis_history()
+        if history:
+            for item in history:
+                with st.expander(f"JD: {item.get('job_description', '')[:20]}..."):
+                    try:
+                        res = json.loads(item.get("results", "[]"))
+                        for r in res:
+                            st.write(f"#{r['rank']} {r['name']} - {r['score']}%")
+                    except:
+                        st.write("Error parsing results.")
+        else:
+            st.info("No history found in database.")
 
 if 'analysis_results' not in st.session_state:
     st.session_state.analysis_results = None
@@ -134,6 +163,13 @@ def main():
                     prog.progress(i + 1)
                 prog.empty()
             st.toast("✅ Analysis complete!", icon="🎉")
+            
+            # Save to Database if connected
+            if st.session_state.get('supabase_url') and st.session_state.get('supabase_key'):
+                if save_analysis_to_db(jd_input, results):
+                    st.toast("💾 Saved to Supabase History!", icon="☁️")
+                else:
+                    st.error("Failed to save to Supabase. Check your Table structure.")
 
     if not st.session_state.analysis_results:
         return

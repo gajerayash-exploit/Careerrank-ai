@@ -3,8 +3,12 @@ import spacy
 import nltk
 from nltk.corpus import stopwords
 import pdfplumber
+import pytesseract
+from pdf2image import convert_from_bytes
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import google.generativeai as genai
+import streamlit as st
 
 try:
     nlp = spacy.load('en_core_web_sm')
@@ -34,8 +38,8 @@ EDUCATION_KEYWORDS = {
 }
 
 def extract_text_from_pdf(pdf_file):
-    
     text = ""
+    # Try normal text extraction first
     try:
         with pdfplumber.open(pdf_file) as pdf:
             for page in pdf.pages:
@@ -44,6 +48,18 @@ def extract_text_from_pdf(pdf_file):
                     text += extracted + "\n"
     except Exception as e:
         print(f"[PDF ERROR] {e}")
+
+    # Fallback to OCR if less than 50 characters found (scanned document)
+    if len(text.strip()) < 50:
+        try:
+            pdf_file.seek(0)
+            images = convert_from_bytes(pdf_file.read())
+            for img in images:
+                text += pytesseract.image_to_string(img) + "\n"
+        except Exception as e:
+            print(f"[OCR ERROR] {e}")
+
+    pdf_file.seek(0)
     return text
 
 def preprocess_text(text):
@@ -226,6 +242,25 @@ def get_ai_summary(matched_skills, missing_skills, score, candidate_name="This c
         return (f"{name} does not strongly align with the role requirements. "
                 f"Missing key skills such as {top_missing}.")
 
+def generate_interview_questions(missing_skills):
+    if not missing_skills:
+        return "• What is your proudest technical achievement?\n• How do you handle tight deadlines?"
+        
+    api_key = st.session_state.get('gemini_api_key', '')
+    if not api_key:
+        return f"• Tell me about your experience with {missing_skills[0]}?\n• How would you approach learning {missing_skills[1] if len(missing_skills)>1 else missing_skills[0]}?"
+        
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        prompt = (f"A candidate is missing the following core skills required for the job: {', '.join(missing_skills[:5])}. "
+                  "Generate exactly 2 tough but fair technical interview questions to evaluate if they have adjacent knowledge "
+                  "or can learn these missing skills quickly. Output ONLY the 2 questions as a bulleted list using '•'.")
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return f"• Tell me about your experience with {missing_skills[0]}?\n• How would you approach learning {missing_skills[1] if len(missing_skills)>1 else missing_skills[0]}?"
+
 def process_all_resumes(resume_files, jd_text):
     
     results = []
@@ -259,6 +294,7 @@ def process_all_resumes(resume_files, jd_text):
                                     final_score,
                                     candidate_info['name']
                                 ),
+            "Interview Questions": generate_interview_questions(analysis["missing_skills"]),
             "Highlighted Text": highlighted,
             "Raw Text Length":  len(raw_text),
         })
