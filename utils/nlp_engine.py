@@ -1,6 +1,8 @@
 import re
 import spacy
 import nltk
+nltk.download('punkt_tab', quiet=True)
+nltk.download('stopwords', quiet=True)
 from nltk.corpus import stopwords
 import pdfplumber
 import pytesseract
